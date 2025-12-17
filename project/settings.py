@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
+    'crispy_forms',
+
 ]
 
 MIDDLEWARE = [
@@ -88,6 +90,9 @@ DATABASES = {
     'default': database.config()
 }
 
+
+# Custom user model
+AUTH_USER_MODEL = 'api.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/stable/ref/settings/#auth-password-validators
@@ -137,3 +142,6 @@ INTERNAL_IPS = ['127.0.0.1']
 
 # django_project/settings.py
 LOGIN_REDIRECT_URL = "/" # Redirect to home after login
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

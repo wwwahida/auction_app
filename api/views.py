@@ -39,7 +39,7 @@ def signup(request):
     else:
         form = Signupform()
 
-    return render(request, 'api/spa/signup.html', {'form': form})
+    return render(request, 'registration/signup.html', {'form': form})
     
     
 
