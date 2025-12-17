@@ -6,11 +6,26 @@
     <div class="card shadow p-4" style="width: 600px; background-color: #cce5ff; border-radius: 20px;">
         
         <h4 class="text-center mb-4 text-dark fw-bold">
-            Sign Up
+            Create an Account
         </h4>
 
         <form method="POST" >
             {% csrf_token %}
+
+            <div class="mb-3">
+                {{ form.displayPic.label_tag }}
+                {{ form.displayPic }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.firstName.label_tag }}
+                {{ form.firstName }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.lastName.label_tag }}
+                {{ form.lastName }}
+            </div>
 
             <div class="mb-3">
                 {{ form.username.label_tag }}
@@ -34,7 +49,7 @@
 
             <div class="mb-3">
                 {{ form.confirmPassword.label_tag }}
-                {{ form.confirmpassword }}
+                {{ form.confirmPassword }}
             </div>
 
             <button type="submit" class="btn btn-danger w-100 mt-3">Sign Up</button>
