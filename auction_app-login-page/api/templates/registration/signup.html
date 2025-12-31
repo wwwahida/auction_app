@@ -1,0 +1,87 @@
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card shadow p-4 text-light" style="width: 600px; background-color: #001122; border-radius: 20px;">
+        
+        <h4 class="text-center mb-4 text-light fw-bold">
+            Create an account
+        </h4>
+
+        <form method="POST" >
+            {% csrf_token %}
+
+            <div class="mb-3">
+                {{ form.displayPic.label_tag }}
+                {{ form.displayPic }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.firstName.label_tag }}
+                {{ form.firstName }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.lastName.label_tag }}
+                {{ form.lastName }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.username.label_tag }}
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="text-danger">
+                        {{ form.username.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.email.label_tag }}
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="text-danger">
+                        {{ form.email.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.date_of_birth.label_tag }}
+                {{ form.date_of_birth }}
+                {% if form.date_of_birth.errors %}
+                    <div class="text-danger">
+                        {{ form.date_of_birth.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.password.label_tag }}
+                {{ form.password }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.confirmPassword.label_tag }}
+                {{ form.confirmPassword }}
+                {% if form.confirmPassword.errors %}
+                    <div class="text-danger">
+                        {{ form.confirmPassword.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-3">Sign Up</button>
+            <div class="text-center mt-3">
+                <p class="small" style="color: #c3c3c3;">Already have an account? <a href="{% url 'login' %}">
+                    Sign in
+                </a></p>
+                
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
