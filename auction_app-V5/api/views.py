@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import Http404
 from django.contrib import auth
+from django.utils.timezone import now
 
 
 from .models import User , AuctionListing
@@ -62,3 +63,10 @@ def addItem(request:HttpRequest) -> JsonResponse:
         return JsonResponse({"message": "Item added"})
     
     return JsonResponse({"error": "POST required"})
+
+def getItems(request: HttpRequest) -> JsonResponse:
+    if request.method == "GET":
+        items = list(AuctionListing.objects.filter(finishTime__gt=now()).values("id", "title", "description"))
+        return JsonResponse({"items": items})
+        
+      

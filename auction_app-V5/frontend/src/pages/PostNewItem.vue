@@ -1,8 +1,7 @@
 <template>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+    rel="stylesheet"/>
 
   <div class="container d-flex justify-content-center align-items-center min-vh-100">
     <div
@@ -101,6 +100,14 @@ const form = ref<formTypes>({
 
 const minDate = new Date(Date.now() + 24 * 60 * 60 * 1000) .toISOString() .slice(0, 16); 
 
+function getCSRF(): string {
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1] || '';
+}
+
+
 
 async function submitItem() {
    const image = document.querySelector<HTMLInputElement>("#image")!;
@@ -118,6 +125,9 @@ async function submitItem() {
   const response = await fetch(`/api/add-item/`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        "X-CSRFToken": getCSRF(),
+      },
       body: itemDetails,
     });
 

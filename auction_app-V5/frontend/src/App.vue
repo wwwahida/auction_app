@@ -1,13 +1,5 @@
 <template>
     <main class="container pt-4">
-        <div>
-            <router-link
-                class=""
-                :to="{name: 'Main Page'}"
-            >
-                Main Page
-            </router-link>
-        </div>
         <RouterView class="flex-shrink-0" />
     </main>
 </template>
