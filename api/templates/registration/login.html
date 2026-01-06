@@ -4,7 +4,7 @@
     <div class="card shadow p-4 text-light" style="width: 400px; background-color: #001122; border-radius: 20px;">
         <h4 class="text-center mb-4 text-light fw-bold">Sign in to your account</h4>
         
-        <form method="post">
+        <form method="POST">
             {% csrf_token %}
             {{ form|crispy }} <button type="submit" class="btn btn-primary w-100 mt-3">Continue</button>
         </form>

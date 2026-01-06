@@ -9,7 +9,7 @@
             Create an account
         </h4>
 
-        <form method="POST" >
+        <form method="POST" action="{% url 'signup' %}" enctype="multipart/form-data">
             {% csrf_token %}
 
             <div class="mb-3">

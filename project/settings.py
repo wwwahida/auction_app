@@ -142,7 +142,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 INTERNAL_IPS = ['127.0.0.1']
 
 # django_project/settings.py
-LOGIN_REDIRECT_URL = "/" # Redirect to home after login
+LOGIN_REDIRECT_URL = "home/" # Redirect to home after login
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
