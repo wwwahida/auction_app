@@ -29,7 +29,7 @@ class AuctionListing(models.Model):
         help_text="The date and time the auction will end."
     )
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="listings"
     )
@@ -42,7 +42,7 @@ class Bid(models.Model):
         help_text="The amount you are bidding."
     )
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="bids"
     )
