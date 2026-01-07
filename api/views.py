@@ -1,9 +1,11 @@
+from django.conf import settings
 from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import Http404
 from django.contrib import auth
 from django.utils.timezone import now
+
 
 
 from .models import User , AuctionListing
@@ -66,7 +68,15 @@ def addItem(request:HttpRequest) -> JsonResponse:
 
 def getItems(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
-        items = list(AuctionListing.objects.filter(finishTime__gt=now()).values("id", "title", "description"))
+        items = list(AuctionListing.objects.filter(finishTime__gt=now()).values("id", "title", "description" , "startingPrice", "picture", "finishTime"))
+        
+        for image in items:
+            image["picture"] = request.build_absolute_uri(settings.MEDIA_URL + image["picture"])
+
         return JsonResponse({"items": items})
+    
+
+
+
         
       

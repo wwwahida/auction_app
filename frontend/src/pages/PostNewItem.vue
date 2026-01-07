@@ -120,8 +120,6 @@ async function submitItem() {
   itemDetails.append("endTime", form.value.endTime);
   itemDetails.append("image", file);
 
-
-
   const response = await fetch(`/api/add-item/`, {
       method: "POST",
       credentials: "include",

@@ -27,11 +27,26 @@
     </form>
 
      <ul class="list-group mt-3" v-if="items.length > 0">
-      <li v-for="item in items" :key="item.id" class="list-group-item d-flex align-items-center bg-warning">
-        <a href="#" class = "text-dark fw-bold">{{ item.title }}</a>
-        <span class = "text-secondary fw-bold ms-5">{{ item.description }}</span>
-      </li>
-    </ul>
+        <li v-for="item in items" :key="item.id" class="list-group-item">
+          <div class="d-flex">
+
+          <img
+            :src="item.picture"
+            alt="Item image"
+            style="width: 115px; height: 115px; object-fit: cover;"
+            class="me-3 rounded"
+          />
+
+          <div>
+            <h5 class="fw-bold text-dark mb-1">{{ item.title }}</h5>
+            <p class="fw-bold text-dark mb-1"> Price: £{{ item.startingPrice }} </p>
+            <p class="text-secondary mb-1"> {{ item.description }} </p>
+          </div>
+
+        </div>
+        </li>
+      </ul>
+
      <p v-else-if="searchValue && items.length === 0">No items found.</p>
   </div>
 
@@ -47,6 +62,9 @@ interface Item {
   id: number;
   title: string;
   description: string;
+  startingPrice: number;
+  picture: string;
+  finishTime: string;
 }
 
 const searchValue = ref<string>("");
