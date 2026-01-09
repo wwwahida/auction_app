@@ -6,11 +6,14 @@ from django.conf import settings
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
-    displayName = models.CharField(max_length=50)
+    username = models.CharField(max_length=50, unique=True)
     firstName = models.CharField(max_length=30)
     lastName = models.CharField(max_length=30)
     dob = models.DateField()
     displayPic = models.ImageField(upload_to='display_pics/', null=True, blank=True)
+    
+    REQUIRED_FIELDS = ['email', 'dob', 'firstName', 'lastName']
+
  
 class AuctionListing(models.Model):
     title = models.CharField(max_length=100)   
