@@ -10,6 +10,11 @@
   >
     Post New Item
   </router-link>
+
+  <router-link :to="{ name: 'profile' }" class="btn btn-outline-primary btn-md me-2">
+  Profile
+  </router-link>
+
 </div>
  
 <div class="container my-3">

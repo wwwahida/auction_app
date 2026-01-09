@@ -6,6 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // These can be imported from other files
 import MainPage from '../pages/MainPage.vue';
 import PostNewItem from '../pages/PostNewItem.vue';
+import ProfilePage from '../pages/ProfilePage.vue';
 
 
 let base = (import.meta.env.MODE == 'development') ? import.meta.env.BASE_URL : ''
@@ -18,6 +19,7 @@ const router = createRouter({
     routes: [
         { path: '/', name: 'Main Page', component: MainPage },
         { path: '/newitem/', name: 'postItem', component: PostNewItem },
+        { path: '/profile/', name: 'profile', component: ProfilePage },
     ]
 })
 
