@@ -9,6 +9,9 @@ from datetime import date
 from typing import Any, Optional, TypedDict
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth import logout
+from django.views.decorators.http import require_POST
+
 
 
 
@@ -161,4 +164,8 @@ def profile(request: HttpRequest) -> JsonResponse:
     return JsonResponse(_profile_to_payload(user, request))
 
         
-      
+@login_required
+@require_POST
+def logout_api(request: HttpRequest) -> JsonResponse:
+    logout(request)
+    return JsonResponse({"message": "Logged out"})

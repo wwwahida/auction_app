@@ -4,6 +4,10 @@
   <div class="container" style="max-width: 720px;">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h1 class="mb-0">Profile</h1>
+      <button class="btn btn-outline-danger" @click="signOut">
+        Sign out
+      </button>
+
       <router-link :to="{ name: 'Main Page' }" class="btn btn-outline-secondary">Back</router-link>
     </div>
 
@@ -166,4 +170,22 @@ async function save() {
 }
 
 onMounted(loadProfile);
+
+async function signOut() {
+  try {
+    await fetch("/api/logout/", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "X-CSRFToken": getCSRF(),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "",
+    });
+  } finally {
+    // redirect to login page regardless of success/failure
+    window.location.href = "/accounts/login/";
+  }
+}
+
 </script>
