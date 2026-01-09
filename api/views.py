@@ -19,7 +19,7 @@ import json
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-
+from django.db.models import Q
 
 
 from .models import User , AuctionListing
@@ -67,6 +67,27 @@ def session_status(request: HttpRequest) -> JsonResponse:
     if request.user.is_authenticated:
         return JsonResponse({"isAuthenticated": True, "username": request.user.username})
     return JsonResponse({"isAuthenticated": False, "username": None})
+
+def search_items(request: HttpRequest) -> JsonResponse:
+    if request.method != "GET":
+        return JsonResponse({"error": "GET required"}, status=405)
+
+    q: str = request.GET.get("q", "").strip()
+
+    qs = AuctionListing.objects.filter(finishTime__gt=now())
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    items = list(qs.values("id", "title", "description", "startingPrice", "picture", "finishTime"))
+
+    for item in items:
+        pic = item.get("picture")
+        if pic:
+            item["picture"] = request.build_absolute_uri(settings.MEDIA_URL + pic)
+        else:
+            item["picture"] = None
+
+    return JsonResponse({"items": items})
 
 
 @login_required
