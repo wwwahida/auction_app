@@ -59,13 +59,17 @@ def signup(request : HttpRequest) -> HttpResponse:
     return render(request, 'registration/signup.html', {'form': form})
 
 
-    
-@login_required
 @ensure_csrf_cookie
 def main_spa(request: HttpRequest) -> HttpResponse:
     return render(request, 'api/spa/index.html', {})
 
+def session_status(request: HttpRequest) -> JsonResponse:
+    if request.user.is_authenticated:
+        return JsonResponse({"isAuthenticated": True, "username": request.user.username})
+    return JsonResponse({"isAuthenticated": False, "username": None})
 
+
+@login_required
 def addItem(request:HttpRequest) -> JsonResponse:
     if request.method == "POST"  :
         title : str = request.POST["title"]
@@ -90,7 +94,6 @@ def getItems(request: HttpRequest) -> JsonResponse:
 
         return JsonResponse({"items": items})
     
-
 
 class ProfilePayload(TypedDict):
     username: str
