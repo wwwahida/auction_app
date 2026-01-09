@@ -82,6 +82,83 @@ def getItems(request: HttpRequest) -> JsonResponse:
     
 
 
+class ProfilePayload(TypedDict):
+    username: str
+    firstName: str
+    lastName: str
+    email: str
+    dob: str
+    displayPic: Optional[str]
+
+
+def _profile_to_payload(user: User, request: HttpRequest) -> ProfilePayload:
+    display_url: Optional[str] = None
+    if user.displayPic:
+        display_url = request.build_absolute_uri(user.displayPic.url)
+
+    return {
+        "username": user.username,
+        "firstName": user.firstName,
+        "lastName": user.lastName,
+        "email": user.email,
+        "dob": user.dob.isoformat(),
+        "displayPic": display_url,
+    }
+
+
+@login_required
+def profile(request: HttpRequest) -> JsonResponse:
+    user: User = request.user 
+
+    if request.method == "GET":
+        return JsonResponse(_profile_to_payload(user, request))
+
+    if request.method != "POST":
+        return JsonResponse({"error": "GET or POST required"}, status=405)
+
+    # Read fields 
+    username = request.POST.get("username", user.username).strip()
+    first_name = request.POST.get("firstName", user.firstName).strip()
+    last_name = request.POST.get("lastName", user.lastName).strip()
+    email = request.POST.get("email", user.email).strip()
+    dob_str = request.POST.get("dob", user.dob.isoformat()).strip()
+
+    # Basic validation
+    if not username:
+        return JsonResponse({"error": "Username cannot be empty."}, status=400)
+    if not email:
+        return JsonResponse({"error": "Email cannot be empty."}, status=400)
+
+    # Uniqueness checks
+    if User.objects.filter(username=username).exclude(pk=user.pk).exists():
+        return JsonResponse({"error": "Username is already in use."}, status=400)
+
+    if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+        return JsonResponse({"error": "Email is already in use."}, status=400)
+
+    # Date of birth parsing and validation
+    try:
+        dob_val = date.fromisoformat(dob_str)
+    except ValueError:
+        return JsonResponse({"error": "Invalid date of birth."}, status=400)
+
+    if dob_val > date.today():
+        return JsonResponse({"error": "Date of birth cannot be in the future."}, status=400)
+
+    # Update user fields
+    user.username = username
+    user.firstName = first_name
+    user.lastName = last_name
+    user.email = email
+    user.dob = dob_val
+
+    # Handle display picture upload
+    if "displayPic" in request.FILES:
+        user.displayPic = request.FILES["displayPic"]
+
+    user.save()
+
+    return JsonResponse(_profile_to_payload(user, request))
 
         
       
