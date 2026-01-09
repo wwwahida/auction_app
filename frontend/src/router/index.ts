@@ -18,9 +18,24 @@ const router = createRouter({
     history: createWebHistory(base),
     routes: [
         { path: '/', name: 'Main Page', component: MainPage },
-        { path: '/newitem/', name: 'postItem', component: PostNewItem },
-        { path: '/profile/', name: 'profile', component: ProfilePage },
+        { path: "/profile/", name: "profile", component: ProfilePage, meta: { requiresAuth: true } },
+        { path: "/newitem/", name: "postItem", component: PostNewItem, meta: { requiresAuth: true } },
     ]
 })
+
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth) return true;
+
+  const res = await fetch("/api/session/", { credentials: "include" });
+  const data = (await res.json()) as { isAuthenticated: boolean };
+
+  if (!data.isAuthenticated) {
+    window.location.href = `/accounts/login/?next=${encodeURIComponent(to.fullPath)}`;
+    return false;
+  }
+
+  return true;
+});
+
 
 export default router

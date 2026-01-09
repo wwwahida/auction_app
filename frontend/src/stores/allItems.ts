@@ -25,5 +25,15 @@ export const itemStores = defineStore('itemStore', {
         this.allItems = data.items;
       }
     },
+    async searchItems(query: string): Promise<Item[]> {
+      const res = await fetch(`/api/search-items/?q=${encodeURIComponent(query)}`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) return [];
+
+      const data = (await res.json()) as { items: Item[] };
+      return data.items;
+    }
   },
 });

@@ -19,10 +19,11 @@ from django.urls import include, path
 from django.http import HttpResponse
 from django.contrib.auth import views as auth_views
 
-from .views import addItem, signup , getItems, profile, logout_api, change_password
+from .views import addItem, session_status, signup , getItems, profile, logout_api, change_password
 
 
 urlpatterns = [
+    path("session/", session_status, name="session-status"),
     path('signup/', signup, name='signup'),
     path('add-item/', addItem, name='add-item'),
     path('get-items/', getItems, name='get-items'),
