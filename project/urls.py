@@ -18,7 +18,6 @@ from django.contrib import admin
 from django.urls import include, path , re_path
 from django.http import HttpResponse
 from api.views import main_spa
-from django.views.generic import TemplateView 
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.conf.urls.static import static
@@ -30,8 +29,7 @@ urlpatterns = [
     path('health', lambda request: HttpResponse("OK")),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
-    re_path(r'^(?!media/).*$', login_required(TemplateView.as_view(template_name='api/spa/index.html')))
-    
+    re_path(r'^(?!media/).*$', main_spa)    
 ] 
 
 if settings.DEBUG:

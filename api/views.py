@@ -5,6 +5,10 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.http import Http404
 from django.contrib import auth
 from django.utils.timezone import now
+from datetime import date
+from typing import Any, Optional, TypedDict
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 
 
@@ -46,7 +50,8 @@ def signup(request : HttpRequest) -> HttpResponse:
 
 
     
-
+@login_required
+@ensure_csrf_cookie
 def main_spa(request: HttpRequest) -> HttpResponse:
     return render(request, 'api/spa/index.html', {})
 
