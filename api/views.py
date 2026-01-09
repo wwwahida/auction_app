@@ -11,7 +11,14 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth import logout
 from django.views.decorators.http import require_POST
-
+import json
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+import json
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 
 
@@ -169,3 +176,35 @@ def profile(request: HttpRequest) -> JsonResponse:
 def logout_api(request: HttpRequest) -> JsonResponse:
     logout(request)
     return JsonResponse({"message": "Logged out"})
+    
+@login_required
+@require_POST
+def change_password(request: HttpRequest) -> JsonResponse:
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    new_password = str(data.get("newPassword", "")).strip()
+    confirm_password = str(data.get("confirmPassword", "")).strip()
+
+    if not new_password or not confirm_password:
+        return JsonResponse({"error": "Both password fields are required."}, status=400)
+
+    if new_password != confirm_password:
+        return JsonResponse({"error": "Passwords do not match."}, status=400)
+
+    user: User = request.user  # type: ignore[assignment]
+
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as e:
+        return JsonResponse({"error": " ".join(e.messages)}, status=400)
+
+    user.set_password(new_password)
+    user.save()
+
+    # keep them logged in after password change
+    update_session_auth_hash(request, user)
+
+    return JsonResponse({"message": "Password updated"})

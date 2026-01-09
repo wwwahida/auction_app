@@ -19,7 +19,7 @@ from django.urls import include, path
 from django.http import HttpResponse
 from django.contrib.auth import views as auth_views
 
-from .views import addItem, signup , getItems, profile, logout_api
+from .views import addItem, signup , getItems, profile, logout_api, change_password
 
 
 urlpatterns = [
@@ -28,6 +28,8 @@ urlpatterns = [
     path('get-items/', getItems, name='get-items'),
     path('profile/', profile, name='profile'),
     path("logout/", logout_api, name="logout-api"),
+    path("change-password/", change_password, name="change-password"),
+
 
     
 ]

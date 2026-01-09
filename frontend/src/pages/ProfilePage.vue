@@ -64,6 +64,17 @@
               <input class="form-control" type="date" v-model="profile.dob" />
             </div>
 
+            <div class="mb-3">
+            <label class="form-label">New password</label>
+            <input class="form-control" type="password" v-model="password.newPassword" />
+            </div>
+
+            <div class="mb-3">
+            <label class="form-label">Confirm new password</label>
+            <input class="form-control" type="password" v-model="password.confirmPassword" />
+            </div>
+
+
             <button class="btn btn-primary" @click="save" :disabled="saving">
               {{ saving ? 'Saving...' : 'Save changes' }}
             </button>
@@ -102,6 +113,12 @@ const profile = ref<UserProfile>({
 
 const file = ref<File | null>(null);
 const previewUrl = ref<string>("");
+    
+const password = ref<{ newPassword: string; confirmPassword: string }>({
+  newPassword: "",
+  confirmPassword: "",
+});
+
 
 function getCSRF(): string {
   return document.cookie
@@ -141,6 +158,8 @@ async function save() {
 
   try {
     const fd = new FormData();
+    const np = password.value.newPassword.trim();
+    const cp = password.value.confirmPassword.trim();
     fd.append("username", profile.value.username);
     fd.append("firstName", profile.value.firstName);
     fd.append("lastName", profile.value.lastName);
@@ -161,6 +180,38 @@ async function save() {
     }
 
     profile.value = data as UserProfile;
+
+    if (np || cp) {
+    if (!np || !cp) {
+        throw new Error("Please fill both password fields.");
+    }
+    if (np !== cp) {
+        throw new Error("New password and confirmation do not match");
+    }
+
+    const passRes = await fetch("/api/change-password/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+        "X-CSRFToken": getCSRF(),
+        "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+        newPassword: np,
+        confirmPassword: cp,
+        }),
+    });
+
+    const passData = await passRes.json();
+    if (!passRes.ok) {
+        throw new Error(passData?.error || "Failed to change password");
+    }
+    }
+
+
+    password.value.newPassword = "";
+    password.value.confirmPassword = "";
+
     success.value = "Saved!";
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Unknown error";
@@ -187,5 +238,8 @@ async function signOut() {
     window.location.href = "/accounts/login/";
   }
 }
+
+
+
 
 </script>
