@@ -48,22 +48,24 @@
       </ul>
     </div>
   </nav>
-  <div div class="container pt-5 mt-3">
+  <div class="container pt-5 mt-3">
     <h1 class="me-3 mb-0">Home Page</h1>
  
     <div class="container my-3">
-        <form class="d-flex" @submit.prevent="searchforItems" >
+        <form class="d-flex" @submit.prevent="searchforItems">
           <input
             type="text"
             class="form-control me-3"
             placeholder="Search for items"
             v-model="searchValue"
-            
+            @keydown.enter.prevent="searchforItems"
           />
-          <button type="submit" class="btn btn-danger">
+
+          <button type="button" class="btn btn-danger" @click="searchforItems">
             Search
           </button>
         </form>
+
 
         <ul class="list-group mt-3" v-if="items.length > 0">
             <li v-for="item in items" :key="item.id" class="list-group-item">
@@ -172,14 +174,17 @@ async function loadItems(): Promise<void> {
 async function searchforItems(): Promise<void> {
   const q = searchValue.value.trim();
 
-  if (!q) {
-    // reset to all items
-    items.value = itemStore.allItems;
-    return;
-  }
+  const url = q
+    ? `/api/search-items/?q=${encodeURIComponent(q)}`
+    : `/api/get-items/`;
 
-  items.value = await itemStore.searchItems(q);
+  const res = await fetch(url, { credentials: "include" });
+  const data = (await res.json()) as { items: Item[] };
+  items.value = data.items;
 }
+
+
+
 
 onMounted(async () => {
   await refreshAuth();
