@@ -110,9 +110,12 @@ def getItems(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
         items = list(AuctionListing.objects.filter(finishTime__gt=now()).values("id", "title", "description" , "startingPrice", "picture", "finishTime"))
         
-        for image in items:
-            image["picture"] = request.build_absolute_uri(settings.MEDIA_URL + image["picture"])
-
+        for item in items:
+            pic = item.get("picture")
+            if pic:
+                item["picture"] = request.build_absolute_uri(settings.MEDIA_URL + item["picture"])
+            else:
+                item["picture"] = None
         return JsonResponse({"items": items})
     
 
