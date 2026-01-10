@@ -166,23 +166,19 @@ const itemStore = itemStores();
 
 async function loadItems(): Promise<void> {
   await itemStore.loadAllItems();
-  items.value = itemStore.allItems; // show items immediately on page load
-}
+  items.value = itemStore.allItems;
+} 
 
 async function searchforItems(): Promise<void> {
-  const q = searchValue.value.trim().toLowerCase();
+  const q = searchValue.value.trim();
 
   if (!q) {
-    // reset to all items when search box is empty
+    // reset to all items
     items.value = itemStore.allItems;
     return;
   }
 
-  items.value = itemStore.allItems.filter(
-    (item) =>
-      item.title.toLowerCase().includes(q) ||
-      item.description.toLowerCase().includes(q)
-  );
+  items.value = await itemStore.searchItems(q);
 }
 
 onMounted(async () => {
