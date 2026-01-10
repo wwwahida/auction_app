@@ -20,6 +20,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+import re
 
 
 from .models import User , AuctionListing
@@ -72,11 +73,19 @@ def search_items(request: HttpRequest) -> JsonResponse:
     if request.method != "GET":
         return JsonResponse({"error": "GET required"}, status=405)
 
-    q: str = request.GET.get("q", "").strip()
-
+    q = request.GET.get("q", "").strip()
     qs = AuctionListing.objects.filter(finishTime__gt=now())
+
     if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+        terms = [t for t in q.split() if t]
+        combined = Q()
+
+        for term in terms:
+            pattern = rf"(^|\W){re.escape(term)}(\W|$)"  # whole word match
+            term_q = Q(title__iregex=pattern) | Q(description__iregex=pattern)
+            combined &= term_q  # require ALL terms to appear
+
+        qs = qs.filter(combined)
 
     items = list(qs.values("id", "title", "description", "startingPrice", "picture", "finishTime"))
 
@@ -107,17 +116,26 @@ def addItem(request:HttpRequest) -> JsonResponse:
     return JsonResponse({"error": "POST required"})
 
 def getItems(request: HttpRequest) -> JsonResponse:
-    if request.method == "GET":
-        items = list(AuctionListing.objects.filter(finishTime__gt=now()).values("id", "title", "description" , "startingPrice", "picture", "finishTime"))
-        
-        for item in items:
-            pic = item.get("picture")
-            if pic:
-                item["picture"] = request.build_absolute_uri(settings.MEDIA_URL + item["picture"])
-            else:
-                item["picture"] = None
-        return JsonResponse({"items": items})
-    
+    if request.method != "GET":
+        return JsonResponse({"error": "GET required"}, status=405)
+
+    q = request.GET.get("q", "").strip()
+
+    qs = AuctionListing.objects.filter(finishTime__gt=now())
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    items = list(qs.values("id", "title", "description", "startingPrice", "picture", "finishTime"))
+
+    for item in items:
+        pic = item.get("picture")
+        if pic:
+            item["picture"] = request.build_absolute_uri(settings.MEDIA_URL + pic)
+        else:
+            item["picture"] = None
+
+    return JsonResponse({"items": items})
+
 
 class ProfilePayload(TypedDict):
     username: str
