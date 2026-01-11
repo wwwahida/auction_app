@@ -19,8 +19,10 @@ import json
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Q, Max
 import re
+from decimal import Decimal, InvalidOperation
+
 
 
 from .models import User , AuctionListing
@@ -74,7 +76,9 @@ def search_items(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"error": "GET required"}, status=405)
 
     q = request.GET.get("q", "").strip()
-    qs = AuctionListing.objects.filter(finishTime__gt=now())
+    qs = AuctionListing.objects.filter(finishTime__gt=now()).annotate(
+        highestBid=Max("bids__amount")
+    )
 
     if q:
         terms = [t for t in q.split() if t]
@@ -87,7 +91,7 @@ def search_items(request: HttpRequest) -> JsonResponse:
 
         qs = qs.filter(combined)
 
-    items = list(qs.values("id", "title", "description", "startingPrice", "picture", "finishTime"))
+    items = list(qs.values("id", "title", "description", "startingPrice", "highestBid", "picture", "finishTime"))
 
     for item in items:
         pic = item.get("picture")
@@ -95,6 +99,42 @@ def search_items(request: HttpRequest) -> JsonResponse:
             item["picture"] = request.build_absolute_uri(settings.MEDIA_URL + pic)
         else:
             item["picture"] = None
+
+        hb = item.get("highestBid")
+        if hb:
+            item["currentPrice"] = str(hb)
+        else:
+            item["currentPrice"] = None
+
+    return JsonResponse({"items": items})
+
+def getItems(request: HttpRequest) -> JsonResponse:
+    if request.method != "GET":
+        return JsonResponse({"error": "GET required"}, status=405)
+
+    q = request.GET.get("q", "").strip()
+
+    qs = AuctionListing.objects.filter(finishTime__gt=now()).annotate(
+        highestBid=Max("bids__amount")
+    )
+
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    items = list(qs.values("id", "title", "description", "startingPrice", "highestBid", "picture", "finishTime"))
+
+    for item in items:
+        pic = item.get("picture")
+        if pic:
+            item["picture"] = request.build_absolute_uri(settings.MEDIA_URL + pic)
+        else:
+            item["picture"] = None
+
+        hb = item.get("highestBid")
+        if hb:
+            item["currentPrice"] = str(hb)
+        else:
+            item["currentPrice"] = None
 
     return JsonResponse({"items": items})
 
@@ -114,28 +154,6 @@ def addItem(request:HttpRequest) -> JsonResponse:
         return JsonResponse({"message": "Item added"})
     
     return JsonResponse({"error": "POST required"})
-
-def getItems(request: HttpRequest) -> JsonResponse:
-    if request.method != "GET":
-        return JsonResponse({"error": "GET required"}, status=405)
-
-    q = request.GET.get("q", "").strip()
-
-    qs = AuctionListing.objects.filter(finishTime__gt=now())
-    if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-
-    items = list(qs.values("id", "title", "description", "startingPrice", "picture", "finishTime"))
-
-    for item in items:
-        pic = item.get("picture")
-        if pic:
-            item["picture"] = request.build_absolute_uri(settings.MEDIA_URL + pic)
-        else:
-            item["picture"] = None
-
-    return JsonResponse({"items": items})
-
 
 class ProfilePayload(TypedDict):
     username: str
@@ -253,3 +271,55 @@ def change_password(request: HttpRequest) -> JsonResponse:
     update_session_auth_hash(request, user)
 
     return JsonResponse({"message": "Password updated"})
+
+@login_required
+@require_POST
+def place_bid(request: HttpRequest) -> JsonResponse:
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    listing_id = data.get("listingId")
+    amount_raw = data.get("amount")
+
+    if listing_id is None:
+        return JsonResponse({"error": "listingId is required."}, status=400)
+
+    try:
+        amount = Decimal(str(amount_raw)).quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError):
+        return JsonResponse({"error": "amount must be a valid number."}, status=400)
+
+    if amount <= 0:
+        return JsonResponse({"error": "Bid amount must be > 0."}, status=400)
+
+    listing = get_object_or_404(AuctionListing, pk=listing_id)
+
+    # block bidding on your own item
+    if listing.user_id == request.user.id:
+        return JsonResponse({"error": "You cannot bid on your own item."}, status=400)
+
+    if listing.finishTime <= now():
+        return JsonResponse({"error": "Auction has already ended."}, status=400)
+
+    highest = (
+        Bid.objects.filter(auctionItem=listing).aggregate(m=Max("amount")).get("m")
+    )
+    current_price = highest if highest is not None else listing.startingPrice
+
+    if amount <= current_price:
+        return JsonResponse(
+            {"error": f"Bid must be greater than current price (£{current_price})."},
+            status=400,
+        )
+
+    Bid.objects.create(amount=amount, user=request.user, auctionItem=listing)
+
+    return JsonResponse(
+        {
+            "message": "Bid placed",
+            "currentPrice": str(amount),
+        }
+    )
+

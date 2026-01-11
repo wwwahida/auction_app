@@ -80,8 +80,14 @@
 
               <div>
                 <h5 class="fw-bold text-dark mb-1">{{ item.title }}</h5>
-                <p class="fw-bold text-dark mb-1"> Price: £{{ item.startingPrice }} </p>
+                <p class="fw-bold text-dark mb-1">
+                  Price: £{{ item.currentPrice ?? item.startingPrice }}
+                </p>
                 <p class="text-secondary mb-1"> {{ item.description }} </p>
+
+                <button class="btn btn-sm btn-outline-success mt-2" @click="bidOnItem(item.id)">
+                  Bid
+                </button>
               </div>
 
             </div>
@@ -158,6 +164,7 @@ interface Item {
   title: string;
   description: string;
   startingPrice: number;
+  currentPrice?: number | string;
   picture: string;
   finishTime: string;
 }
@@ -183,8 +190,44 @@ async function searchforItems(): Promise<void> {
   items.value = data.items;
 }
 
+async function bidOnItem(itemId: number): Promise<void> {
+  if (!isAuthenticated.value) {
+    goLogin();
+    return;
+  }
 
+  const amountStr = window.prompt("Enter your bid amount (£):");
+  if (!amountStr) return;
 
+  const amount = Number(amountStr);
+  if (Number.isNaN(amount) || amount <= 0) {
+    alert("Please enter a valid bid amount.");
+    return;
+  }
+
+  const res = await fetch("/api/place-bid/", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "X-CSRFToken": getCSRF(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ listingId: itemId, amount }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data?.error || "Failed to place bid.");
+    return;
+  }
+
+  // Refresh the list after bidding
+  if (searchValue.value.trim()) {
+    await searchforItems();
+  } else {
+    await loadItems();
+  }
+}
 
 onMounted(async () => {
   await refreshAuth();
