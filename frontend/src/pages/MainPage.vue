@@ -163,7 +163,7 @@ interface Item {
   id: number;
   title: string;
   description: string;
-  startingPrice: number;
+  startingPrice: number | string;
   currentPrice?: number | string;
   picture: string;
   finishTime: string;
@@ -215,19 +215,29 @@ async function bidOnItem(itemId: number): Promise<void> {
     body: JSON.stringify({ listingId: itemId, amount }),
   });
 
-  const data = await res.json();
+  if (res.redirected) {
+    window.location.href = res.url;
+    return;
+  }
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    const text = await res.text();
+    alert(`Request failed (${res.status}). Not JSON response.\n\n${text.slice(0, 200)}`);
+    return;
+  }
+
   if (!res.ok) {
     alert(data?.error || "Failed to place bid.");
     return;
   }
 
-  // Refresh the list after bidding
-  if (searchValue.value.trim()) {
-    await searchforItems();
-  } else {
-    await loadItems();
-  }
+  await loadItems();
+  alert("Bid placed successfully!");
 }
+
 
 onMounted(async () => {
   await refreshAuth();

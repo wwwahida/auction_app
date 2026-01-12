@@ -24,8 +24,7 @@ import re
 from decimal import Decimal, InvalidOperation
 
 
-
-from .models import User , AuctionListing
+from .models import User , AuctionListing, Bid
 from .forms import Signupform
 
 def signup(request : HttpRequest) -> HttpResponse:
@@ -287,14 +286,20 @@ def place_bid(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"error": "listingId is required."}, status=400)
 
     try:
-        amount = Decimal(str(amount_raw)).quantize(Decimal("0.01"))
+        amount = Decimal(str(amount_raw))
     except (InvalidOperation, TypeError):
-        return JsonResponse({"error": "amount must be a valid number."}, status=400)
+        return JsonResponse({"error": "Invalid bid amount."}, status=400)
 
     if amount <= 0:
-        return JsonResponse({"error": "Bid amount must be > 0."}, status=400)
+        return JsonResponse({"error": "Bid amount must be greater than 0."}, status=400)
 
-    listing = get_object_or_404(AuctionListing, pk=listing_id)
+    try:
+        listing = AuctionListing.objects.get(id=listing_id)
+    except AuctionListing.DoesNotExist:
+        return JsonResponse({"error": "Listing not found."}, status=404)
+
+    if listing.finishTime <= now():
+        return JsonResponse({"error": "Auction has ended."}, status=400)
 
     # block bidding on your own item
     if listing.user_id == request.user.id:
@@ -310,7 +315,7 @@ def place_bid(request: HttpRequest) -> JsonResponse:
 
     if amount <= current_price:
         return JsonResponse(
-            {"error": f"Bid must be greater than current price (£{current_price})."},
+            {"error": f"Bid must be higher than current price (£{current_price})."},
             status=400,
         )
 
