@@ -1,4 +1,13 @@
 <template>
+    <BidModal
+      :open="bidOpen"
+      :itemTitle="bidItem?.title ?? ''"
+      :currentPrice="bidItem?.currentPrice ?? bidItem?.startingPrice ?? 0"
+      :submitting="bidSubmitting"
+      :error="bidError"
+      @close="closeBid"
+      @submit="submitBid"
+    />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
 
     <nav class="navbar navbar-expand bg-light w-100 fixed-top px-3">
@@ -80,8 +89,14 @@
 
               <div>
                 <h5 class="fw-bold text-dark mb-1">{{ item.title }}</h5>
-                <p class="fw-bold text-dark mb-1"> Price: £{{ item.startingPrice }} </p>
+                <p class="fw-bold text-dark mb-1">
+                  Price: £{{formatPrice(item.currentPrice ?? item.startingPrice)}}
+                </p>
                 <p class="text-secondary mb-1"> {{ item.description }} </p>
+
+                <button class="btn btn-sm btn-outline-success mt-2" @click="openBid(item)">
+                  Bid
+                </button>
               </div>
 
             </div>
@@ -97,6 +112,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { itemStores } from "../stores/allItems";
+import BidModal from "./BidModal.vue";
 
 const router = useRouter();
 
@@ -157,7 +173,8 @@ interface Item {
   id: number;
   title: string;
   description: string;
-  startingPrice: number;
+  startingPrice: number | string;
+  currentPrice?: number | string;
   picture: string;
   finishTime: string;
 }
@@ -183,8 +200,86 @@ async function searchforItems(): Promise<void> {
   items.value = data.items;
 }
 
+const bidOpen = ref(false);
+const bidItem = ref<Item | null>(null);
+const bidError = ref<string>("");
+const bidSubmitting = ref(false);
 
+function openBid(item: Item): void {
+  if (!isAuthenticated.value) {
+    window.location.href = `/accounts/login/?next=${encodeURIComponent(window.location.pathname)}`;
+    return;
+  }
+  bidItem.value = item;
+  bidError.value = "";
+  bidOpen.value = true;
+}
 
+function closeBid(): void {
+  bidOpen.value = false;
+  bidItem.value = null;
+  bidError.value = "";
+}
+
+async function submitBid(amountStr: string): Promise<void> {
+  if (!bidItem.value) return;
+
+  const amount = Number(amountStr);
+  if (!amountStr || Number.isNaN(amount) || amount <= 0) {
+    bidError.value = "Enter a valid bid amount.";
+    return;
+  }
+
+  bidSubmitting.value = true;
+  bidError.value = "";
+
+  try {
+    const res = await fetch("/api/place-bid/", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "X-CSRFToken": getCSRF(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ listingId: bidItem.value.id, amount }),
+    });
+
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {
+      const text = await res.text();
+      throw new Error(`Server error (${res.status}): ${text.slice(0, 200)}`);
+    }
+
+    if (!res.ok) {
+      bidError.value = data?.error || "Bid failed.";
+      return;
+    }
+
+    if (res.redirected) {
+      window.location.href = res.url;
+      return;
+    }
+
+    const newPrice = Number(data.currentPrice ?? amount);
+    const idx = items.value.findIndex((x) => x.id === bidItem.value!.id);
+    if (idx !== -1) items.value[idx].currentPrice = newPrice;
+
+    closeBid();
+  } catch (e) {
+    bidError.value = e instanceof Error ? e.message : "Unknown error";
+  } finally {
+    bidSubmitting.value = false;
+  }
+
+}
+
+function formatPrice(value: number | string | null | undefined): string {
+  const n = typeof value === "string" ? Number(value) : value ?? 0;
+  if (Number.isNaN(n)) return "0.00";
+  return n.toFixed(2);
+}
 
 onMounted(async () => {
   await refreshAuth();
