@@ -90,7 +90,7 @@
               <div>
                 <h5 class="fw-bold text-dark mb-1">{{ item.title }}</h5>
                 <p class="fw-bold text-dark mb-1">
-                  Price: £{{ item.currentPrice ?? item.startingPrice }}
+                  Price: £{{formatPrice(item.currentPrice ?? item.startingPrice)}}
                 </p>
                 <p class="text-secondary mb-1"> {{ item.description }} </p>
 
@@ -275,6 +275,11 @@ async function submitBid(amountStr: string): Promise<void> {
 
 }
 
+function formatPrice(value: number | string | null | undefined): string {
+  const n = typeof value === "string" ? Number(value) : value ?? 0;
+  if (Number.isNaN(n)) return "0.00";
+  return n.toFixed(2);
+}
 
 onMounted(async () => {
   await refreshAuth();
