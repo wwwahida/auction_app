@@ -328,3 +328,43 @@ def place_bid(request: HttpRequest) -> JsonResponse:
         }
     )
 
+
+def getitemDetails(request: HttpRequest, item_id: int) -> JsonResponse:
+    listing = get_object_or_404(AuctionListing, pk=item_id)
+
+    highest = Bid.objects.filter(auctionItem=listing).aggregate(m=Max("amount"))["m"]
+    current_price = highest if highest is not None else listing.startingPrice
+
+    picture_url = None
+    if listing.picture:
+        picture_url = request.build_absolute_uri(settings.MEDIA_URL + str(listing.picture))
+
+    bid_qs = (
+        Bid.objects
+        .filter(auctionItem=listing)
+        .select_related("user")
+        .order_by("-id")[:20]
+    )
+
+    bids = []
+    for b in bid_qs:
+        bids.append({
+            "id": b.id,
+            "amount": str(b.amount),
+            "username": b.user.username,
+            "createdAt": getattr(b, "createdAt", None).isoformat() if getattr(b, "createdAt", None) else None,
+        })
+
+
+    return JsonResponse({
+        "id": listing.id,
+        "title": listing.title,
+        "description": listing.description,
+        "startingPrice": str(listing.startingPrice),
+        "currentPrice": str(current_price),
+        "picture": picture_url,
+        "finishTime": listing.finishTime.isoformat(),
+        "sellerUsername": listing.user.username,
+        "bidCount": Bid.objects.filter(auctionItem=listing).count(),
+        "bids": bids,
+    })

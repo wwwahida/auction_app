@@ -62,6 +62,7 @@ class Bid(models.Model):
         on_delete=models.CASCADE,
         related_name="bids"
     )
+    createdAt = models.DateTimeField(auto_now_add=True)
 
 
 class PageView(models.Model):
