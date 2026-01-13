@@ -57,8 +57,6 @@ const props = defineProps<{
   initialAmount?: string;
 }>();
 
-const bidAmount = ref("");
-
 const minSuggested = computed(() => {
   const cp = Number(props.currentPrice ?? 0);
   const next = (Number.isFinite(cp) ? cp : 0) + 0.50;
@@ -77,12 +75,12 @@ const emit = defineEmits<{
   (e: "submit", amount: string): void;
 }>();
 
-const localAmount = ref(props.initialAmount ?? "");
+const bidAmount = ref(props.initialAmount ?? "");
 
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) localAmount.value = props.initialAmount ?? "";
+    if (isOpen) bidAmount.value = props.initialAmount ?? "";
   }
 );
 
@@ -91,7 +89,7 @@ function emitClose() {
 }
 
 function submit() {
-  emit("submit", localAmount.value);
+  emit("submit", bidAmount.value);
 }
 </script>
 
