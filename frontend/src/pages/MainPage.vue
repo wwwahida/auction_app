@@ -11,52 +11,51 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
 
     <nav class="navbar navbar-expand bg-light w-100 fixed-top px-3">
+      <div class="d-flex align-items-center">
+        <button v-if="!isAuthenticated" class="btn btn-primary" @click="goLogin">
+          Sign in
+        </button>
+      </div>
 
-    <div class="d-flex align-items-center">
-      <button v-if="!isAuthenticated" class="btn btn-primary" @click="goLogin">
-        Log in
-      </button>
-    </div>
+      <div class="dropdown ms-auto">
+        <button
+          class="btn btn-outline-primary dropdown-toggle"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          My Profile
+        </button>
 
-    <div class="dropdown ms-auto">
-      <button
-        class="btn btn-outline-primary dropdown-toggle"
-        type="button"
-        data-bs-toggle="dropdown"
-        aria-expanded="false"
-      >
-        My Profile
-      </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <button class="dropdown-item" @click="goProfile">
+              View profile
+            </button>
+          </li>
 
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li>
-          <button class="dropdown-item" @click="goProfile">
-            View profile
-          </button>
-        </li>
+          <li>
+            <button class="dropdown-item" @click="goPostNewItem">
+              Post new item
+            </button>
+          </li>
 
-        <li>
-          <button class="dropdown-item" @click="goPostNewItem">
-            Post new item
-          </button>
-        </li>
+          <li><hr class="dropdown-divider" /></li>
 
-        <li><hr class="dropdown-divider" /></li>
+          <li v-if="isAuthenticated">
+            <button class="dropdown-item text-danger" @click="signOut">
+              Sign out
+            </button>
+          </li>
 
-        <li v-if="isAuthenticated">
-          <button class="dropdown-item text-danger" @click="signOut">
-            Sign out
-          </button>
-        </li>
-
-        <li v-else>
-          <button class="dropdown-item" @click="goLogin">
-            Sign in
-          </button>
-        </li>
-      </ul>
-    </div>
-  </nav>
+          <li v-else>
+            <button class="dropdown-item" @click="goLogin">
+              Sign in
+            </button>
+          </li>
+        </ul>
+      </div>
+    </nav>
   <div class="container pt-5 mt-3">
     <h1 class="me-3 mb-0">Home Page</h1>
  
@@ -98,7 +97,7 @@
                 <p class="text-secondary mb-1"> {{ item.description }} </p>
 
                 <button class="btn btn-sm btn-outline-success mt-2" @click="openBid(item)">
-                  Bid
+                  Place a bid
                 </button>
               </div>
 
