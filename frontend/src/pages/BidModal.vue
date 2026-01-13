@@ -12,7 +12,7 @@
             <strong>{{ itemTitle }}</strong>
           </p>
           <p class="text-muted mb-3">
-            Current price: <strong>£{{ currentPrice }}</strong>
+            Current price: <strong>£{{formatMoney(props.currentPrice) }}</strong>
           </p>
 
           <label class="form-label">Your bid (£)</label>
@@ -21,9 +21,9 @@
             type="number"
             step="0.01"
             min="0"
-            v-model="localAmount"
+            v-model="bidAmount"
             @keydown.enter.prevent="submit"
-            placeholder="e.g. 25.50"
+            :placeholder="placeholderText"
             autofocus
           />
 
@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
   open: boolean;
@@ -56,6 +56,21 @@ const props = defineProps<{
   error: string;
   initialAmount?: string;
 }>();
+
+const bidAmount = ref("");
+
+const minSuggested = computed(() => {
+  const cp = Number(props.currentPrice ?? 0);
+  const next = (Number.isFinite(cp) ? cp : 0) + 0.50;
+  return next.toFixed(2);
+});
+
+const placeholderText = computed(() => `e.g. ${minSuggested.value}`);
+
+function formatMoney(v: number | string | undefined | null): string {
+  const n = Number(v ?? 0);
+  return Number.isNaN(n) ? "0.00" : n.toFixed(2);
+}
 
 const emit = defineEmits<{
   (e: "close"): void;
