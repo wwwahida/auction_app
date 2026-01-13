@@ -36,6 +36,14 @@ class AuctionListing(models.Model):
         on_delete=models.CASCADE,
         related_name="listings"
     )
+    winner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="won_auctions",
+    )
+    winner_notified = models.BooleanField(default=False)
     
 
 class Bid(models.Model):
