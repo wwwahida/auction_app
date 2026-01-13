@@ -339,6 +339,23 @@ def getitemDetails(request: HttpRequest, item_id: int) -> JsonResponse:
     if listing.picture:
         picture_url = request.build_absolute_uri(settings.MEDIA_URL + str(listing.picture))
 
+    bid_qs = (
+        Bid.objects
+        .filter(auctionItem=listing)
+        .select_related("user")
+        .order_by("-id")[:20]
+    )
+
+    bids = []
+    for b in bid_qs:
+        bids.append({
+            "id": b.id,
+            "amount": str(b.amount),
+            "username": b.user.username,
+            "createdAt": getattr(b, "createdAt", None).isoformat() if getattr(b, "createdAt", None) else None,
+        })
+
+
     return JsonResponse({
         "id": listing.id,
         "title": listing.title,
@@ -347,4 +364,7 @@ def getitemDetails(request: HttpRequest, item_id: int) -> JsonResponse:
         "currentPrice": str(current_price),
         "picture": picture_url,
         "finishTime": listing.finishTime.isoformat(),
+        "sellerUsername": listing.user.username,
+        "bidCount": Bid.objects.filter(auctionItem=listing).count(),
+        "bids": bids,
     })
