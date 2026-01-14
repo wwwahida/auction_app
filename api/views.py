@@ -375,6 +375,8 @@ def getitemDetails(request: HttpRequest, item_id: int) -> JsonResponse:
 def item_forum(request: HttpRequest, item_id: int) -> JsonResponse:
     listing = get_object_or_404(AuctionListing.objects.select_related("user"), pk=item_id)
 
+    viewer_id = request.user.id if request.user.is_authenticated else None
+
     questions_qs = (
         ItemQuestion.objects.filter(listing_id=item_id)
         .select_related("user")
@@ -398,8 +400,13 @@ def item_forum(request: HttpRequest, item_id: int) -> JsonResponse:
                     "username": r.user.username,
                     "createdAt": r.createdAt.isoformat(),
                     "isOwner": r.user_id == listing.user_id,
+                    "isAsker": r.user_id == q.user_id,
                 }
             )
+
+        can_reply = (
+            viewer_id is not None and (viewer_id == listing.user_id or viewer_id == q.user_id)
+        )
 
         questions.append(
             {
@@ -407,23 +414,17 @@ def item_forum(request: HttpRequest, item_id: int) -> JsonResponse:
                 "text": q.text,
                 "username": q.user.username,
                 "createdAt": q.createdAt.isoformat(),
+                "canReply": can_reply,
                 "replies": replies,
             }
         )
-
-    is_auth = request.user.is_authenticated
-    viewer_username = request.user.username if is_auth else None
-    viewer_is_owner = is_auth and (request.user.id == listing.user_id)
 
     return JsonResponse(
         {
             "itemId": listing.id,
             "ownerUsername": listing.user.username,
-
-            "isAuthenticated": is_auth,
-            "currentUsername": viewer_username,
-
-            "canReply": viewer_is_owner,
+            "viewerUsername": request.user.username if request.user.is_authenticated else None,
+            "isLister": request.user.is_authenticated and request.user.id == listing.user_id,
             "questions": questions,
         }
     )
@@ -454,6 +455,7 @@ def post_question(request: HttpRequest, item_id: int) -> JsonResponse:
                 "text": q.text,
                 "username": request.user.username,
                 "createdAt": q.createdAt.isoformat(),
+                "canReply": True,
                 "replies": [],
             }
         },
@@ -464,11 +466,20 @@ def post_question(request: HttpRequest, item_id: int) -> JsonResponse:
 @login_required
 @require_POST
 def post_reply(request: HttpRequest, question_id: int) -> JsonResponse:
-    question = get_object_or_404(ItemQuestion.objects.select_related("listing"), pk=question_id)
+    question = get_object_or_404(
+        ItemQuestion.objects.select_related("listing", "user", "listing__user"),
+        pk=question_id,
+    )
     listing = question.listing
 
-    if listing.user_id != request.user.id:
-        return JsonResponse({"error": "Only the listing owner can reply."}, status=403)
+    is_listing_owner = listing.user_id == request.user.id
+    is_question_author = question.user_id == request.user.id
+
+    if not (is_listing_owner or is_question_author):
+        return JsonResponse(
+            {"error": "Only the listing owner or the person who asked can reply."},
+            status=403,
+        )
 
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -477,9 +488,9 @@ def post_reply(request: HttpRequest, question_id: int) -> JsonResponse:
 
     text = str(data.get("text", "")).strip()
     if not text:
-        return JsonResponse({"error": "Answer cannot be empty."}, status=400)
+        return JsonResponse({"error": "Reply cannot be empty."}, status=400)
     if len(text) > 1000:
-        return JsonResponse({"error": "Answer is too long (max 1000 chars)."}, status=400)
+        return JsonResponse({"error": "Reply is too long (max 1000 chars)."}, status=400)
 
     r = ItemReply.objects.create(question=question, user=request.user, text=text)
 
@@ -488,9 +499,10 @@ def post_reply(request: HttpRequest, question_id: int) -> JsonResponse:
             "reply": {
                 "id": r.id,
                 "text": r.text,
-                "username": request.user.username,
+                "username": r.user.username,
                 "createdAt": r.createdAt.isoformat(),
-                "isOwner": True,
+                "isOwner": is_listing_owner,
+                "isAsker": is_question_author,
             }
         },
         status=201,

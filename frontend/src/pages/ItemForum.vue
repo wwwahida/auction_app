@@ -52,9 +52,8 @@
                     <span class="fw-semibold">@{{ r.username }}</span>
 
                     <!-- owner badge -->
-                    <span v-if="r.isOwner" class="badge bg-success">
-                      Lister
-                    </span>
+                    <span v-if="r.isOwner" class="badge bg-success">Lister</span>
+                    <span v-else-if="r.isAsker" class="badge bg-secondary">Asker</span>
                   </div>
 
                   <div class="text-muted small">{{ formatDate(r.createdAt) }}</div>
@@ -65,11 +64,11 @@
 
               <!-- Reply box -->
               <div class="mt-3">
-                <template v-if="canReply">
+                <template v-if="q.canReply">
                   <input
                     class="form-control"
                     v-model="replyDraft[q.id]"
-                    :placeholder="`Reply to @${q.username}...`"
+                    placeholder="Reply in this thread..."
                     @keydown.enter.prevent="submitReply(q.id)"
                   />
 
@@ -82,11 +81,15 @@
                       {{ postingReplyId === q.id ? "Replying..." : "Reply" }}
                     </button>
                   </div>
-
-                  <div v-if="replyError[q.id]" class="text-danger small mt-1">
-                    {{ replyError[q.id] }}
-                  </div>
                 </template>
+
+                <div v-else class="text-danger small mt-2">
+                  Only the lister or the asker can reply in this thread.
+                </div>
+
+                <div v-if="replyError[q.id]" class="text-danger small mt-1">
+                  {{ replyError[q.id] }}
+                </div>
               </div>
             </div>
           </div>
@@ -106,6 +109,7 @@ interface ForumReply {
   username: string;
   createdAt: string;
   isOwner: boolean;
+  isAsker: boolean;
 }
 
 interface ForumQuestion {
@@ -113,6 +117,7 @@ interface ForumQuestion {
   text: string;
   username: string;
   createdAt: string;
+  canReply: boolean;
   replies: ForumReply[];
 }
 
@@ -147,8 +152,6 @@ const replyDraft = ref<Record<number, string>>({});
 const replyError = ref<Record<number, string>>({});
 const postingReplyId = ref<number | null>(null);
 
-const canReply = ref(false);
-
 async function loadForum(): Promise<void> {
   loading.value = true;
   error.value = "";
@@ -159,7 +162,6 @@ async function loadForum(): Promise<void> {
 
     const data = await res.json();
     questions.value = data.questions ?? [];
-    canReply.value = !!data.canReply;
   } catch (e) {
     error.value = e instanceof Error ? e.message : "Unknown error";
   } finally {
@@ -211,13 +213,14 @@ async function submitQuestion(): Promise<void> {
 async function submitReply(questionId: number): Promise<void> {
   replyError.value[questionId] = "";
 
-  if (!canReply.value) {
-    replyError.value[questionId] = "Only the lister can reply to questions.";
+  if (!props.isAuthenticated) {
+    window.location.href = `/accounts/login/?next=${encodeURIComponent(window.location.pathname)}`;
     return;
   }
 
-  if (!props.isAuthenticated) {
-    window.location.href = `/accounts/login/?next=${encodeURIComponent(window.location.pathname)}`;
+  const q = questions.value.find((x) => x.id === questionId);
+  if (!q?.canReply) {
+    replyError.value[questionId] = "Only the lister or the asker can reply in this thread.";
     return;
   }
 
