@@ -7,7 +7,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MainPage from '../pages/MainPage.vue';
 import PostNewItem from '../pages/PostNewItem.vue';
 import ProfilePage from '../pages/ProfilePage.vue';
-import itemPage from '../pages/itemPage.vue';
+import ItemPage from '../pages/ItemPage.vue';
 
 let base = (import.meta.env.MODE == 'development') ? import.meta.env.BASE_URL : ''
 
@@ -20,7 +20,7 @@ const router = createRouter({
         { path: '/', name: 'Main Page', component: MainPage },
         { path: "/profile/", name: "profile", component: ProfilePage, meta: { requiresAuth: true } },
         { path: "/newitem/", name: "postItem", component: PostNewItem, meta: { requiresAuth: true } },
-        {path: '/item/:id', name: 'itemDetail', component: itemPage},
+        {path: '/item/:id', name: 'itemDetail', component: ItemPage},
     ]
 })
 

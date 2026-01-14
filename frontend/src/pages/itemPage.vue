@@ -152,12 +152,19 @@
       </div>
     </div>
   </div>
+
+  <ItemForum
+    v-if="item"
+    :item-id="item.id"
+    :is-authenticated="isAuthenticated"
+  />
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BidModal from "./BidModal.vue";
+import ItemForum from "./ItemForum.vue";
 
 interface Item {
   id: number;

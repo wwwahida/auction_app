@@ -19,12 +19,13 @@ import json
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.db.models import Q, Max
+from django.db.models import Q, Max, Prefetch
+from django.views.decorators.http import require_http_methods, require_POST
 import re
 from decimal import Decimal, InvalidOperation
 
 
-from .models import User , AuctionListing, Bid
+from .models import User , AuctionListing, Bid, ItemQuestion, ItemReply
 from .forms import Signupform
 
 def signup(request : HttpRequest) -> HttpResponse:
@@ -368,3 +369,129 @@ def getitemDetails(request: HttpRequest, item_id: int) -> JsonResponse:
         "bidCount": Bid.objects.filter(auctionItem=listing).count(),
         "bids": bids,
     })
+
+
+@require_http_methods(["GET"])
+def item_forum(request: HttpRequest, item_id: int) -> JsonResponse:
+    listing = get_object_or_404(AuctionListing.objects.select_related("user"), pk=item_id)
+
+    questions_qs = (
+        ItemQuestion.objects.filter(listing_id=item_id)
+        .select_related("user")
+        .prefetch_related(
+            Prefetch(
+                "replies",
+                queryset=ItemReply.objects.select_related("user").order_by("createdAt"),
+            )
+        )
+        .order_by("-createdAt")
+    )
+
+    questions = []
+    for q in questions_qs:
+        replies = []
+        for r in q.replies.all():
+            replies.append(
+                {
+                    "id": r.id,
+                    "text": r.text,
+                    "username": r.user.username,
+                    "createdAt": r.createdAt.isoformat(),
+                    "isOwner": r.user_id == listing.user_id,
+                }
+            )
+
+        questions.append(
+            {
+                "id": q.id,
+                "text": q.text,
+                "username": q.user.username,
+                "createdAt": q.createdAt.isoformat(),
+                "replies": replies,
+            }
+        )
+
+    is_auth = request.user.is_authenticated
+    viewer_username = request.user.username if is_auth else None
+    viewer_is_owner = is_auth and (request.user.id == listing.user_id)
+
+    return JsonResponse(
+        {
+            "itemId": listing.id,
+            "ownerUsername": listing.user.username,
+
+            "isAuthenticated": is_auth,
+            "currentUsername": viewer_username,
+
+            "canReply": viewer_is_owner,
+            "questions": questions,
+        }
+    )
+
+
+@login_required
+@require_POST
+def post_question(request: HttpRequest, item_id: int) -> JsonResponse:
+    listing = get_object_or_404(AuctionListing, pk=item_id)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    text = str(data.get("text", "")).strip()
+    if not text:
+        return JsonResponse({"error": "Question cannot be empty."}, status=400)
+    if len(text) > 1000:
+        return JsonResponse({"error": "Question is too long (max 1000 chars)."}, status=400)
+
+    q = ItemQuestion.objects.create(listing=listing, user=request.user, text=text)
+
+    return JsonResponse(
+        {
+            "question": {
+                "id": q.id,
+                "text": q.text,
+                "username": request.user.username,
+                "createdAt": q.createdAt.isoformat(),
+                "replies": [],
+            }
+        },
+        status=201,
+    )
+
+
+@login_required
+@require_POST
+def post_reply(request: HttpRequest, question_id: int) -> JsonResponse:
+    question = get_object_or_404(ItemQuestion.objects.select_related("listing"), pk=question_id)
+    listing = question.listing
+
+    if listing.user_id != request.user.id:
+        return JsonResponse({"error": "Only the listing owner can reply."}, status=403)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    text = str(data.get("text", "")).strip()
+    if not text:
+        return JsonResponse({"error": "Answer cannot be empty."}, status=400)
+    if len(text) > 1000:
+        return JsonResponse({"error": "Answer is too long (max 1000 chars)."}, status=400)
+
+    r = ItemReply.objects.create(question=question, user=request.user, text=text)
+
+    return JsonResponse(
+        {
+            "reply": {
+                "id": r.id,
+                "text": r.text,
+                "username": request.user.username,
+                "createdAt": r.createdAt.isoformat(),
+                "isOwner": True,
+            }
+        },
+        status=201,
+    )

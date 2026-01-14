@@ -64,6 +64,40 @@ class Bid(models.Model):
     )
     createdAt = models.DateTimeField(auto_now_add=True)
 
+class ItemQuestion(models.Model):
+    listing = models.ForeignKey(
+        "AuctionListing",
+        on_delete=models.CASCADE,
+        related_name="questions",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="item_questions",
+    )
+    text = models.TextField(max_length=1000)
+    createdAt = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-createdAt"]
+
+class ItemReply(models.Model):
+    question = models.ForeignKey(
+        ItemQuestion,
+        on_delete=models.CASCADE,
+        related_name="replies",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="item_replies",
+    )
+    text = models.TextField(max_length=1000)
+    createdAt = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["createdAt"]
+
 
 class PageView(models.Model):
     count = models.IntegerField(default=0)

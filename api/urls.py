@@ -19,7 +19,7 @@ from django.urls import include, path
 from django.http import HttpResponse
 from django.contrib.auth import views as auth_views
 
-from .views import addItem, session_status, signup , getItems, profile, logout_api, change_password,getitemDetails, search_items, place_bid
+from .views import addItem, session_status, signup , getItems, profile, logout_api, change_password,getitemDetails, search_items, place_bid, item_forum, post_question, post_reply
 
 
 urlpatterns = [
@@ -33,5 +33,8 @@ urlpatterns = [
     path("search-items/", search_items, name="search-items"),
     path("place-bid/", place_bid, name="place-bid"),
     path("item/<int:item_id>/",getitemDetails, name='get_item_details'),
+    path("item/<int:item_id>/forum/", item_forum, name="item-forum"),
+    path("item/<int:item_id>/questions/", post_question, name="post-question"),
+    path("questions/<int:question_id>/replies/", post_reply, name="post-reply"),
 ]
 
