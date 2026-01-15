@@ -10,3 +10,4 @@ whitenoise==6.9.0
 python-dotenv
 django-crispy-forms
 crispy-bootstrap5
+Pillow==10.4.0
