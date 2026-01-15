@@ -162,3 +162,12 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+APP_DOMAIN = os.getenv("APP_DOMAIN", "").strip()
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+CSRF_TRUSTED_ORIGINS: list[str] = []
+
+if APP_DOMAIN:
+    ALLOWED_HOSTS.append(APP_DOMAIN)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{APP_DOMAIN}")
