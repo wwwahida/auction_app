@@ -36,7 +36,7 @@ Swift Bid is a Django + Vue single-page auction application where users can sign
 
 ## Test Users
 
-1. **Username:** testuser1 
+1. **Username:** testuser1  
    **Password:** Password123!
 
 2. **Username:** testuser2  
