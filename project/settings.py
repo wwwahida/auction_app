@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/stable/ref/settings/
 """
 
 from . import database
-import os
+import os, re
 
 from pathlib import Path
 from dotenv import load_dotenv
