@@ -17,7 +17,7 @@ Swift Bid is a Django + Vue single-page auction application where users can sign
 - **Actually did:** Implemented Profile page + routing, profile editing functionality, logout feature, and improvements to authentication flow and templates/UI, implemented per-item Q&A forum
 
 ### Wahida Rahman (wwwahida / ec23372)
-- **Assigned:** Core auction functionality (bidding, Q&A/forum, auction-end email).
+- **Assigned:** Core auction functionality (bidding, Q&A forum, auction-end email).
 - **Actually did:** Improved the search feature and item detail page UI, implemented bidding end-to-end (backend validation + frontend BidModal + price updates), added bid history + seller username display, improvements to per-item Q&A forum, and created the auction closing command that emails winners.
 
 ---
