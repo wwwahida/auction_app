@@ -8,6 +8,8 @@ from django.conf import settings
 from django.core.files import File
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from django.core.files.storage import default_storage
+
 
 from api.models import AuctionListing, User
 
@@ -250,7 +252,11 @@ class Command(BaseCommand):
 
             # Attach picture if missing (or new)
             image_name = l.get("image")
-            if image_name and not listing.picture:
+
+            pic_name = listing.picture.name if listing.picture else ""
+            missing_on_disk = (not pic_name) or (not default_storage.exists(pic_name))
+
+            if image_name and missing_on_disk:
                 img_path = seed_dir / image_name
                 if img_path.exists():
                     with img_path.open("rb") as f:
