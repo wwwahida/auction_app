@@ -1,13 +1,28 @@
+from __future__ import annotations
+
 from datetime import date, timedelta
 from decimal import Decimal
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from api.models import AuctionListing, User
 from pathlib import Path
+
 from django.conf import settings
 from django.core.files import File
+from django.core.management.base import BaseCommand
+from django.utils import timezone
 
+from api.models import AuctionListing, User
 
+# ----------------------------
+# Seed accounts
+# ----------------------------
+
+DEMO_ADMIN = {
+    "username": "admin",
+    "email": "admin@auction.test",
+    "password": "admin123",  # put this in README (or change it)
+    "firstName": "Admin",
+    "lastName": "User",
+    "dob": date(2000, 1, 1),
+}
 
 DEMO_USERS = [
     {
@@ -17,7 +32,6 @@ DEMO_USERS = [
         "firstName": "Aisha",
         "lastName": "Khan",
         "dob": date(2001, 2, 14),
-
     },
     {
         "username": "testuser2",
@@ -52,6 +66,10 @@ DEMO_USERS = [
         "dob": date(2001, 1, 30),
     },
 ]
+
+# ----------------------------
+# Seed listings
+# ----------------------------
 
 DEMO_LISTINGS = [
     {
@@ -138,10 +156,40 @@ DEMO_LISTINGS = [
 
 
 class Command(BaseCommand):
-    help = "Create demo users + auction listings for local development."
+    help = "Create demo admin + users + auction listings for local development."
 
     def handle(self, *args, **options):
-        # create demo users + listings
+        self._seed_admin()
+        user_map = self._seed_users()
+        self._seed_listings(user_map)
+
+        self.stdout.write(self.style.SUCCESS("✅ seed_demo complete"))
+
+    def _seed_admin(self) -> None:
+        admin, created = User.objects.get_or_create(
+            username=DEMO_ADMIN["username"],
+            defaults={
+                "email": DEMO_ADMIN["email"],
+                "firstName": DEMO_ADMIN["firstName"],
+                "lastName": DEMO_ADMIN["lastName"],
+                "dob": DEMO_ADMIN["dob"],
+            },
+        )
+
+        # Always ensure correct fields/permissions
+        admin.email = DEMO_ADMIN["email"]
+        admin.firstName = DEMO_ADMIN["firstName"]
+        admin.lastName = DEMO_ADMIN["lastName"]
+        admin.dob = DEMO_ADMIN["dob"]
+        admin.is_staff = True
+        admin.is_superuser = True
+        admin.set_password(DEMO_ADMIN["password"])
+        admin.save()
+
+        msg = "Created" if created else "Updated"
+        self.stdout.write(self.style.SUCCESS(f"{msg} admin: {admin.username}"))
+
+    def _seed_users(self) -> dict[str, User]:
         user_map: dict[str, User] = {}
 
         for u in DEMO_USERS:
@@ -155,7 +203,7 @@ class Command(BaseCommand):
                 },
             )
 
-            # Ensure fields + password are set even if user already existed
+            # Keep consistent on re-run
             user.email = u["email"]
             user.firstName = u["firstName"]
             user.lastName = u["lastName"]
@@ -167,9 +215,15 @@ class Command(BaseCommand):
             msg = "Created" if created else "Updated"
             self.stdout.write(self.style.SUCCESS(f"{msg} user: {u['username']}"))
 
-        # Create demo listings (idempotent: won’t duplicate)
+        return user_map
+
+    def _seed_listings(self, user_map: dict[str, User]) -> None:
         now_dt = timezone.now()
+        seed_dir = Path(settings.BASE_DIR) / "api" / "seed_images"
+
         created_count = 0
+        updated_count = 0
+        image_attached = 0
 
         for l in DEMO_LISTINGS:
             owner = user_map[l["owner"]]
@@ -187,34 +241,26 @@ class Command(BaseCommand):
 
             if created:
                 created_count += 1
+            else:
+                updated_count += 1
+                # Update fields in case you tweak demo data later
+                listing.description = l["description"]
+                listing.startingPrice = l["startingPrice"]
+                listing.finishTime = finish_time
 
-        seed_dir = Path(settings.BASE_DIR) / "api" / "seed_images"
-
-        for l in DEMO_LISTINGS:
-            owner = user_map[l["owner"]]
-            finish_time = now_dt + timedelta(days=int(l["days_from_now"]))
-
-            listing, created = AuctionListing.objects.get_or_create(
-                title=l["title"],
-                user=owner,
-                defaults={
-                    "description": l["description"],
-                    "startingPrice": l["startingPrice"],
-                    "finishTime": finish_time,
-                },
-            )
-
-            # Attach picture if listing is new OR missing a picture
+            # Attach picture if missing (or new)
             image_name = l.get("image")
-            if image_name and (created or not listing.picture):
+            if image_name and not listing.picture:
                 img_path = seed_dir / image_name
                 if img_path.exists():
                     with img_path.open("rb") as f:
                         listing.picture.save(img_path.name, File(f), save=False)
-                    listing.save()
+                    image_attached += 1
                 else:
                     self.stdout.write(self.style.WARNING(f"Missing seed image: {img_path}"))
-            
 
-        self.stdout.write(self.style.SUCCESS(f"Demo listings created: {created_count}"))
-        self.stdout.write(self.style.SUCCESS("✅ seed_demo complete"))
+            listing.save()
+
+        self.stdout.write(self.style.SUCCESS(f"Listings created: {created_count}"))
+        self.stdout.write(self.style.SUCCESS(f"Listings updated: {updated_count}"))
+        self.stdout.write(self.style.SUCCESS(f"Images attached: {image_attached}"))
