@@ -15,9 +15,10 @@ Including another URLconf
 """
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.http import HttpResponse
 from django.contrib.auth import views as auth_views
+from django.views.static import serve
 
 from .views import addItem, session_status, signup , getItems, profile, logout_api, change_password,getitemDetails, search_items, place_bid, item_forum, post_question, post_reply
 
@@ -36,5 +37,6 @@ urlpatterns = [
     path("item/<int:item_id>/forum/", item_forum, name="item-forum"),
     path("item/<int:item_id>/questions/", post_question, name="post-question"),
     path("questions/<int:question_id>/replies/", post_reply, name="post-reply"),
+    re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT})
 ]
 

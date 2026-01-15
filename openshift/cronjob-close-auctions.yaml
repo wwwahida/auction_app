@@ -33,6 +33,8 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: close-auctions
+              image: image-registry.openshift-image-registry.svc:5000/web-apps-ec23372/group-26:latest
+              imagePullPolicy: Always
               command: ["bash", "-lc"]
               args:
                 - |
