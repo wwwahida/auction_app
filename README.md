@@ -17,31 +17,24 @@ Swift Bid is a Django + Vue single-page auction application where users can sign
 - **Actually did:** Implemented Profile page + routing, profile editing functionality, logout feature, and improvements to authentication flow and templates/UI, implemented per-item Q&A forum
 
 ### Wahida Rahman (wwwahida / ec23372)
-- **Assigned:** Core auction functionality (bidding, Q&A forum, auction-end email).
-- **Actually did:** Improved the search feature and item detail page UI, implemented bidding end-to-end (backend validation + frontend BidModal + price updates), added bid history + seller username display, improvements to per-item Q&A forum, and created the auction closing command that emails winners.
+- **Assigned:** Core auction functionality (bidding, Q&A forum, auction-end email), App deployment
+- **Actually did:** Improved the search feature and item detail page UI, implemented bidding end-to-end (backend validation + frontend BidModal + price updates), added bid history + seller username display, improvements to per-item Q&A forum, and created the auction closing command that emails winners. Deployed the application on OpenShift
 
 ---
 
 ## Deployed Application URL
-- **URL:** _PASTE YOUR OPENSHIFT DEPLOYED LINK HERE_
+- **URL:** group-26-web-apps-ec23372.apps.a.comp-teach.qmul.ac.uk
 
 ---
 
 ## Admin Account (Django Admin)
 - **Admin URL:** `/admin/`
-- **Username:** _admin_username_here_
-- **Password:** _admin_password_here_
-
-> If you haven’t created one yet:
-> ```bash
-> python manage.py createsuperuser
-> ```
+- **Username:** admin
+- **Password:** admin123
 
 ---
 
-## Test Users (5 accounts)
-
-> Replace these with the real test accounts your marker can use.
+## Test Users
 
 1. **Username:** testuser1 
    **Password:** Password123!
